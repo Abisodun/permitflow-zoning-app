@@ -133,12 +133,23 @@ export default function App() {
     setLoading(false)
   }
 
-  function handleGenerateReport() {
-    const rules = evaluateCompliance(zone, { frontage, depth, isCorner, extracted })
+    function handleGenerateReport() {
+    const def = {
+      lotCoverage: '35.0',
+      buildingHeight: '8.5',
+      frontSetback: '2.0',
+      rearSetback: '7.5',
+      sideSetback: '1.2',
+      lotCoverageNote: 'Default values for testing',
+      confidence: 0.5,
+      source: 'default',
+      raw: 'Default test values',
+    }
+    const data = extracted || def
+    const rules = evaluateCompliance(zone, { frontage, depth, isCorner, extracted: data })
     setResults(rules)
     setShowResults(true)
   }
-
   return (
     <div style={styles.container}>
       <header style={styles.header}>
