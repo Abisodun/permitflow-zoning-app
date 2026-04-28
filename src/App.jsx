@@ -44,15 +44,6 @@ const styles = {
     color: '#888',
     marginTop: '4px',
   },
-  backBtn: {
-    background: 'transparent',
-    border: '1px solid #444',
-    color: '#AAA',
-    padding: '8px 16px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '13px',
-  },
 }
 
 export default function App() {
@@ -69,7 +60,7 @@ export default function App() {
   const [extracted, setExtracted] = useState(null)
   const [loading, setLoading] = useState(false)
   const [showResults, setShowResults] = useState(false)
-  const [reportContent, setReportContent] = useState('')
+  const [results, setResults] = useState([])
 
   async function detectZoning(addr) {
     const res = await fetch('/api/zoning/lookup?address=' + encodeURIComponent(addr))
@@ -106,10 +97,10 @@ export default function App() {
       const text = await f.text()
       const found = []
       const patterns = [
-        /Frontage[:\s]+([\d.]+)\s*m/i,
-        /Lot Depth[:\s]+([\d.]+)\s*m/i,
-        /Side Setback[:\s]+([\d.]+)\s*m/i,
-        /Height[:\s]+([\d.]+)\s*m/i,
+        /Frontage[:\\s]+([\\d.]+)\\s*m/i,
+        /Lot Depth[:\\s]+([\\d.]+)\\s*m/i,
+        /Side Setback[:\\s]+([\\d.]+)\\s*m/i,
+        /Height[:\\s]+([\\d.]+)\\s*m/i,
       ]
       patterns.forEach(p => {
         const m = text.match(p)
@@ -144,33 +135,7 @@ export default function App() {
 
   function handleGenerateReport() {
     const rules = evaluateCompliance(zone, { frontage, depth, isCorner, extracted })
-    const passing = rules.filter(r => r.status === 'pass')
-    const failing = rules.filter(r => r.status === 'fail')
-    const missing = rules.filter(r => r.status === 'missing')
-    const html = `
-<!DOCTYPE html>
-<html><head><title>Compliance Report</title>
-<style>body{font-family:sans-serif;padding:40px;max-width:800px;margin:0 auto;background:#f5f5f5;}
-.card{background:white;border-radius:8px;padding:24px;margin-bottom:16px;box-shadow:0 2px 4px rgba(0,0,0,0.1);}
-h1{color:#333;}h2{color:#666;font-size:14px;margin-bottom:16px;}
-.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;}
-.pass{color:#22c55e;} .fail{color:#ef4444;} .missing{color:#f59e0b;}
-</style></head><body>
-<h1>PermitFlow Zoning Compliance Report</h1>
-<div class="card">
-<h2>Property</h2>
-<div class="row"><span>Address</span><span>${address}</span></div>
-<div class="row"><span>Zone</span><span>${zone}</span></div>
-<div class="row"><span>Frontage</span><span>${frontage} m</span></div>
-<div class="row"><span>Depth</span><span>${depth} m</span></div>
-<div class="row"><span>Corner Lot</span><span>${isCorner ? 'Yes' : 'No'}</span></div>
-</div>
-<div class="card">
-<h2>Results: ${passing.length} passing, ${failing.length} issues, ${missing.length} missing</h2>
-${rules.map(r => `<div class="row"><span>${r.rule}</span><span class="${r.status}">${r.status.toUpperCase()}</span></div>`).join('')}
-</div>
-</body></html>`
-    setReportContent(html)
+    setResults(rules)
     setShowResults(true)
   }
 
@@ -184,12 +149,17 @@ ${rules.map(r => `<div class="row"><span>${r.rule}</span><span class="${r.status
             <div style={styles.subtitle}>Toronto By-law 569-2013 Compliance Checker</div>
           </div>
         </div>
-        {showResults && (
-          <button style={styles.backBtn} onClick={() => setShowResults(false)}>Back</button>
-        )}
       </header>
       {showResults ? (
-        <ResultsScreen reportContent={reportContent} />
+        <ResultsScreen
+          address={address}
+          zone={zone}
+          frontage={frontage}
+          depth={depth}
+          isCorner={isCorner}
+          results={results}
+          onBack={() => setShowResults(false)}
+        />
       ) : (
         <UploadScreen
           address={address}
